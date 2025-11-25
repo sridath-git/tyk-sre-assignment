@@ -2,11 +2,12 @@ import unittest
 import socket
 import requests
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch   # <-- extended to include patch
 from socketserver import TCPServer
 from threading import Thread
 from kubernetes import client
 from kubernetes.client.models import VersionInfo
+from types import SimpleNamespace
 
 from app import app
 
@@ -69,6 +70,78 @@ class TestAppHandler(unittest.TestCase):
         resp = requests.get(self._get_url("healthz"))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.text, "ok")
+
+
+# --------------------------------------------------------------------
+# New tests for Deployment Health logic (SRE story: deployments health)
+# --------------------------------------------------------------------
+class TestGetDeploymentsHealth(unittest.TestCase):
+
+    @patch("app.app.client.AppsV1Api")
+    def test_all_deployments_healthy(self, mock_apps_api):
+        """
+        When all deployments have ready_replicas == spec.replicas
+        the overall status should be 'ok'.
+        """
+        d1 = SimpleNamespace(
+            metadata=SimpleNamespace(namespace="default", name="web"),
+            spec=SimpleNamespace(replicas=3),
+            status=SimpleNamespace(ready_replicas=3),
+        )
+        d2 = SimpleNamespace(
+            metadata=SimpleNamespace(namespace="payments", name="payments-api"),
+            spec=SimpleNamespace(replicas=2),
+            status=SimpleNamespace(ready_replicas=2),
+        )
+
+        # Mock the Kubernetes API response
+        mock_apps_api.return_value.list_deployment_for_all_namespaces.return_value = SimpleNamespace(
+            items=[d1, d2]
+        )
+
+        result = app.get_deployments_health()
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(len(result["deployments"]), 2)
+
+        web = result["deployments"][0]
+        self.assertEqual(web["namespace"], "default")
+        self.assertEqual(web["name"], "web")
+        self.assertEqual(web["desired"], 3)
+        self.assertEqual(web["ready"], 3)
+        self.assertTrue(web["healthy"])
+
+    @patch("app.app.client.AppsV1Api")
+    def test_some_deployments_unhealthy(self, mock_apps_api):
+        """
+        If any deployment has ready_replicas != spec.replicas,
+        overall status should be 'degraded'.
+        """
+        d1 = SimpleNamespace(
+            metadata=SimpleNamespace(namespace="default", name="web"),
+            spec=SimpleNamespace(replicas=3),
+            status=SimpleNamespace(ready_replicas=3),
+        )
+        d2 = SimpleNamespace(
+            metadata=SimpleNamespace(namespace="payments", name="payments-api"),
+            spec=SimpleNamespace(replicas=4),
+            status=SimpleNamespace(ready_replicas=2),
+        )
+
+        mock_apps_api.return_value.list_deployment_for_all_namespaces.return_value = SimpleNamespace(
+            items=[d1, d2]
+        )
+
+        result = app.get_deployments_health()
+
+        self.assertEqual(result["status"], "degraded")
+        self.assertEqual(len(result["deployments"]), 2)
+
+        # Find the payments-api deployment
+        unhealthy = [d for d in result["deployments"] if d["name"] == "payments-api"][0]
+        self.assertFalse(unhealthy["healthy"])
+        self.assertEqual(unhealthy["desired"], 4)
+        self.assertEqual(unhealthy["ready"], 2)
 
 
 if __name__ == '__main__':

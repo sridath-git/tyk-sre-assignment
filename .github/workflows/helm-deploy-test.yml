@@ -24,46 +24,41 @@ jobs:
           pip install -r requirements.txt
           python tests.py -v
 
-      # Create a kind cluster inside the runner
       - name: Set up kind cluster
         uses: helm/kind-action@v1.9.0
         with:
             cluster_name: kind
 
-      # Build the Docker image used by Helm
       - name: Build Docker image
         run: |
           docker build -t tyk-sre-assignment:latest .
 
-      # Load image into kind (no Docker Hub / GHCR needed)
       - name: Load image into kind
         run: |
           kind load docker-image tyk-sre-assignment:latest
 
-      # Install Helm CLI
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      # Deploy the app via Helm
       - name: Deploy via Helm
         run: |
           helm install tyk-sre ./helm/tyk-sre -n ci --create-namespace
           kubectl get pods -n ci
           kubectl rollout status deployment/tyk-sre-deployment -n ci --timeout=120s
 
-      # 1) Test /healthz from inside the cluster
+      # Testing /healthz from inside the cluster
       - name: Test /healthz via curl pod
         run: |
           kubectl run curl-healthz --image=curlimages/curl -n ci --restart=Never --rm -i -- \
             curl -sS -f http://tyk-sre-service:8080/healthz
 
-      # 2) Test /health/apiserver from inside the cluster
+      # Testing /health/apiserver from inside the cluster
       - name: Test /health/apiserver via curl pod
         run: |
           kubectl run curl-apiserver --image=curlimages/curl -n ci --restart=Never --rm -i -- \
             curl -sS -f http://tyk-sre-service:8080/health/apiserver
 
-      # 3) Test /health/deployments from inside the cluster
+      # Testing /health/deployments from inside the cluster
       - name: Wait for system deployments to settle
         run: |
             kubectl wait deployment --all --for=condition=Available --timeout=90s -n kube-system || true

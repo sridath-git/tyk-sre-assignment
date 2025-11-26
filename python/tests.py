@@ -2,7 +2,7 @@ import unittest
 import socket
 import requests
 
-from unittest.mock import MagicMock, patch   # <-- extended to include patch
+from unittest.mock import MagicMock, patch   # extended to include patch
 from socketserver import TCPServer
 from threading import Thread
 from kubernetes import client
@@ -72,9 +72,8 @@ class TestAppHandler(unittest.TestCase):
         self.assertEqual(resp.text, "ok")
 
 
-# --------------------------------------------------------------------
-# New tests for Deployment Health logic (SRE story: deployments health)
-# --------------------------------------------------------------------
+# tests for Deployment Health logic
+
 class TestGetDeploymentsHealth(unittest.TestCase):
 
     @patch("app.app.client.AppsV1Api")

@@ -8,9 +8,9 @@ from http.server import BaseHTTPRequestHandler
 
 class AppHandler(BaseHTTPRequestHandler):
 
-    # -------------------------
+
     # Main GET router
-    # -------------------------
+
     def do_GET(self):
         if self.path == "/healthz":
             self.healthz()
@@ -21,18 +21,16 @@ class AppHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404)
 
-    # -------------------------
     # Existing health check
-    # -------------------------
     def healthz(self):
         self.respond(200, "ok")
 
-    # -------------------------
-    # New: API Server connectivity check
-    # -------------------------
+
+    # API Server connectivity check
+
     def health_apiserver(self):
         try:
-            # Create a Kubernetes API client from the global config
+            # Creating a Kubernetes API client using global config
             api_client = client.ApiClient()
             version = get_kubernetes_version(api_client)
 
@@ -43,9 +41,8 @@ class AppHandler(BaseHTTPRequestHandler):
             result = {"status": "error", "message": str(e)}
             self.respond_json(500, result)
 
-    # -------------------------
-    # New: Deployment health check
-    # -------------------------
+    # Deployment health check
+
     def health_deployments(self):
         try:
             api_client = client.ApiClient()
@@ -58,9 +55,9 @@ class AppHandler(BaseHTTPRequestHandler):
             result = {"status": "error", "message": str(e)}
             self.respond_json(500, result)
 
-    # -------------------------
+
     # Shared response helpers
-    # -------------------------
+
     def respond(self, status: int, content: str):
         self.send_response(status)
         self.send_header('Content-Type', 'text/plain')
@@ -74,17 +71,17 @@ class AppHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(payload).encode("utf-8"))
 
 
-# ----------------------------------------------------------
-# Helper 1 — Already existed in the project
-# ----------------------------------------------------------
+
+# Helper function Already existed in the project
+
 def get_kubernetes_version(api_client: client.ApiClient) -> str:
     version = client.VersionApi(api_client).get_code()
     return version.git_version
 
 
-# ----------------------------------------------------------
-# Helper 2 — New Deployment health logic
-# ----------------------------------------------------------
+
+# Helper function created for  New Deployment health logic
+
 def get_deployments_health(api_client: Optional[client.ApiClient] = None) -> dict:
     if api_client is None:
         api_client = client.ApiClient()
@@ -120,9 +117,9 @@ def get_deployments_health(api_client: Optional[client.ApiClient] = None) -> dic
     }
 
 
-# ----------------------------------------------------------
-# Server start logic (unchanged)
-# ----------------------------------------------------------
+
+# Server start logic exixting
+
 def start_server(address):
     try:
         host, port = address.split(":")

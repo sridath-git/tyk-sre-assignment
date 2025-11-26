@@ -1,0 +1,21 @@
+The tyk-sre-assignment application has been deployed.
+
+1. To check the deployed pods:
+
+   kubectl get pods -n {{ .Release.Namespace }}
+
+2. To check the service:
+
+   kubectl get svc {{ .Release.Name }}-service -n {{ .Release.Namespace }}
+
+3. To access the application locally (port-forward):
+
+   kubectl port-forward svc/{{ .Release.Name }}-service 8080:8080 -n {{ .Release.Namespace }}
+
+Then open another terminal and run:
+
+   curl http://127.0.0.1:8080/healthz
+   curl http://127.0.0.1:8080/health/apiserver
+   curl http://127.0.0.1:8080/health/deployments
+
+These commands allow you to verify the application’s readiness and API server connectivity from your local environment.

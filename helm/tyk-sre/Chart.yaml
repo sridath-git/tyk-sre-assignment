@@ -1,0 +1,7 @@
+apiVersion: v2
+name: tyk-sre-assignment
+description: SRE helper service for Kubernetes health checks (Python implementation)
+type: application
+
+version: 0.1.0
+appVersion: "1.0.0"

@@ -195,3 +195,23 @@ A GitHub Actions workflow is included to validate the full stack by deploying th
 - All SRE health endpoints respond correctly inside a real Kubernetes environment  
 
 **This workflow provides full end-to-end validation of the application, chart, and cluster readiness**
+
+### Quick Local Run (Python)
+
+#### Setup
+```bash
+cd python
+python3 -m venv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txt
+```
+#### Run the Application Locally
+```bash
+python3 main.py --kubeconfig ~/.kube/config --address ":8080"
+```
+#### Test the Endpoints
+```bash
+curl http://127.0.0.1:8080/healthz
+curl http://127.0.0.1:8080/health/apiserver
+curl http://127.0.0.1:8080/health/deployments
+```

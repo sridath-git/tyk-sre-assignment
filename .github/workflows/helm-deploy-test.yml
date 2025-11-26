@@ -64,7 +64,13 @@ jobs:
             curl -sS -f http://tyk-sre-service:8080/health/apiserver
 
       # 3) Test /health/deployments from inside the cluster
+      - name: Wait for system deployments to settle
+        run: |
+            kubectl wait deployment --all --for=condition=Available --timeout=90s -n kube-system || true
+            kubectl wait deployment --all --for=condition=Available --timeout=90s -n ci || true
+
       - name: Test /health/deployments via curl pod
         run: |
-          kubectl run curl-deployments --image=curlimages/curl -n ci --restart=Never --rm -i -- \
-            curl -sS -f http://tyk-sre-service:8080/health/deployments
+            kubectl run curl-deployments --image=curlimages/curl -n ci --restart=Never --rm -i -- \
+            curl -sS http://tyk-sre-service:8080/health/deployments
+

@@ -27,6 +27,8 @@ jobs:
       # Create a kind cluster inside the runner
       - name: Set up kind cluster
         uses: helm/kind-action@v1.9.0
+        with:
+            cluster_name: kind
 
       # Build the Docker image used by Helm
       - name: Build Docker image

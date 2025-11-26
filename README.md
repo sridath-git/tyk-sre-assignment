@@ -45,3 +45,14 @@ To execute unit tests:
 ```
 python3 tests.py -v
 ```
+
+### Code Implemented in Python
+The solution includes:
+
+-SRE-focused health endpoints
+-Kubernetes API integration
+-Deployment health evaluation
+-Unit tests
+-Container image build 
+-Helm chart for Kubernetes deployment
+-CI workflow to build, deploy, and validate the application in a Kind cluster

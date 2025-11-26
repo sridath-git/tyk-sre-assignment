@@ -1,0 +1,68 @@
+name: Helm Deploy Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  helm-deploy-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Python dependencies and run tests
+        working-directory: ./python
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+          python tests.py -v
+
+      # Create a kind cluster inside the runner
+      - name: Set up kind cluster
+        uses: helm/kind-action@v1.9.0
+
+      # Build the Docker image used by Helm
+      - name: Build Docker image
+        run: |
+          docker build -t tyk-sre-assignment:latest .
+
+      # Load image into kind (no Docker Hub / GHCR needed)
+      - name: Load image into kind
+        run: |
+          kind load docker-image tyk-sre-assignment:latest
+
+      # Install Helm CLI
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      # Deploy the app via Helm
+      - name: Deploy via Helm
+        run: |
+          helm install tyk-sre ./helm/tyk-sre-assignment -n ci --create-namespace
+          kubectl get pods -n ci
+          kubectl rollout status deployment/tyk-sre-deployment -n ci --timeout=120s
+
+      # 1) Test /healthz from inside the cluster
+      - name: Test /healthz via curl pod
+        run: |
+          kubectl run curl-healthz --image=curlimages/curl -n ci --restart=Never --rm -i -- \
+            curl -sS -f http://tyk-sre-service:8080/healthz
+
+      # 2) Test /health/apiserver from inside the cluster
+      - name: Test /health/apiserver via curl pod
+        run: |
+          kubectl run curl-apiserver --image=curlimages/curl -n ci --restart=Never --rm -i -- \
+            curl -sS -f http://tyk-sre-service:8080/health/apiserver
+
+      # 3) Test /health/deployments from inside the cluster
+      - name: Test /health/deployments via curl pod
+        run: |
+          kubectl run curl-deployments --image=curlimages/curl -n ci --restart=Never --rm -i -- \
+            curl -sS -f http://tyk-sre-service:8080/health/deployments

@@ -215,3 +215,10 @@ curl http://127.0.0.1:8080/healthz
 curl http://127.0.0.1:8080/health/apiserver
 curl http://127.0.0.1:8080/health/deployments
 ```
+#### KIND 
+```bash
+kind get cluster
+kind delete cluster
+kind create cluster
+python3 main.py -k ~/.kube/config -a :8080
+```
